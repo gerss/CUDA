@@ -26,7 +26,7 @@ int main()
 printf("\n ALLOCATE AND INITIALIZE DATA ON CPU\n");
 printf("----------------------------------------\n");
 
-const int N = 16777216; 
+const int N = 8388608; 
 float *a = new float[N];
 float *b = new float[N];
 float *c = new float[N];
