@@ -1,4 +1,5 @@
 #include <iostream>
+#include <stdio.h>
 #include <sys/time.h>
 
 using namespace std;
@@ -10,42 +11,98 @@ double get_time()
 }
 
 //KERNEL
-__global__ void Add(int *a, int *b)
+__global__ void Add(float *a, float *b, float *c, int N, int BSZ)
 {
-a[0] += b[0];
+
+	int i = blockIdx.x*BSZ + threadIdx.x;
+
+	if (i>=N){return;}
+	c[i] = a[i] + b[i];
+
 }
 
 int main()
 {
 
-//ALLOCATE AND INITIALIZA DATA ON CPU
-int a = 5, b = 9;
-int *d_a, *d_b;
+//ALLOCATE AND INITIALIZE DATA ON CPU
+
+printf("\n ALLOCATE AND INITIALIZE DATA ON CPU\n");
+printf("----------------------------------------\n");
+int N = 1048576; //n° of threads
+cout<<"N° of threads="<<N<<endl;
+int blocksize = 256;
+cout<<"N° of threads per block="<<blocksize<<endl;
+int num_block = (N-0.5)/blocksize + 1;
+cout<<"N° of blocks="<<num_block<<endl;
+
+//float *a, *b, *c;
+//a = (float *)malloc(N*sizeof(float));
+
+float *a = new float[N];
+float *b = new float[N];
+float *c = new float[N];
+
+for( int j=0;j<N;++j)
+{
+	a[j]=j;
+	b[j]=j;
+	c[j]=0;
+}
+
+printf("\n Vector A\n");
+cout<<"A[0]="<<a[0]<<endl;
+printf(".\n.\n.\n");
+cout<<"A[N-1]="<<a[N-1]<<endl;
+
+printf("\n Vector B\n");
+cout<<"B[0]="<<b[0]<<endl;
+printf(".\n.\n.\n");
+cout<<"B[N-1]="<<b[N-1]<<endl;
 
 //ALLOCATE DATA ON GPU
-cudaMalloc(&d_a, sizeof(int));
-cudaMalloc(&d_b, sizeof(int));
+printf("\n ALLOCATE DATA ON GPU\n");
+printf("----------------------------------------");
+
+float *d_a, *d_b, *d_c;
+
+cudaMalloc((void**) &d_a, N*sizeof(float));
+cudaMalloc((void**) &d_b, N*sizeof(float));
+cudaMalloc((void**) &d_c, N*sizeof(float));
+
+//cudaMalloc(&d_a, N*sizeof(float));
 
 //TRANSFER DATA FROM CPU TO GPU
-cudaMemcpy(d_a, &a, sizeof(int), cudaMemcpyHostToDevice);
-cudaMemcpy(d_b, &b, sizeof(int), cudaMemcpyHostToDevice);
+printf("\n TRANSFER DATA FROM CPU TO GPU\n");
+printf("----------------------------------------");
+
+cudaMemcpy(d_a, a, N*sizeof(float), cudaMemcpyHostToDevice);
+cudaMemcpy(d_b, b, N*sizeof(float), cudaMemcpyHostToDevice);
+cudaMemcpy(d_c, c, N*sizeof(float), cudaMemcpyHostToDevice);
+
+//RUN KERNEL
+printf("\n RUN KERNEL\n");
+printf("----------------------------------------");
 
 double start = get_time(); //Initial time
-//RUN KERNEL
-Add<<<1,1>>>(d_a, d_b);
+Add<<<num_block,blocksize>>>(d_a, d_b, d_c, N, blocksize);
 double finish = get_time(); //Final time
 
 double diff = finish - start;
-cout<<"time ="<<diff<<endl;
+cout<<"\nTotal time ="<<diff<<" [s]\n"<<endl;
 
 //TRANSFER DATA FROM GPU TO CPU
-cudaMemcpy(&a, d_a, sizeof(int), cudaMemcpyDeviceToHost);
+printf("\n TRANSFER DATA FROM GPU TO CPU\n");
+printf("----------------------------------------");
 
-cout<<"Total time is : "<<a<<endl;
+cudaMemcpy(c, d_c, N*sizeof(float), cudaMemcpyDeviceToHost);
+
+cout<<"\na[N-1] + b[N-1] ="<<a[N-1]<<"+"<<b[N-1]<<endl;
+cout<<"C[N-1] = "<<c[N-1]<<endl;
 
 //FREE MEMORY
 cudaFree(d_a);
 cudaFree(d_b);
+cudaFree(d_c);
 
 return 0;
 }
