@@ -28,7 +28,7 @@ int main()
 
 printf("\n ALLOCATE AND INITIALIZE DATA ON CPU\n");
 printf("----------------------------------------\n");
-int N = 1048576; //n° of threads
+int N =16777216; //n° of threads
 cout<<"N° of threads="<<N<<endl;
 int blocksize = 256;
 cout<<"N° of threads per block="<<blocksize<<endl;
