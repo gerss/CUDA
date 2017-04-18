@@ -31,6 +31,7 @@ cudaMemcpy(&a, d_a, sizeof(int), cudaMemcpyDeviceToHost);
 
 cout<<"The answer is "<<a<<endl;
 
+//Free memory
 cudaFree(d_a);
 cudaFree(d_b);
 
